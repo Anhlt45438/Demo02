@@ -1,117 +1,179 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const App = () => {
+  const [todos, setTodos] = useState([]);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [editIndex, setEditIndex] = useState(null);
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+  // Cập nhật công việc
+  const addOrUpdateTodo = () => {
+    if (editIndex !== null) {
+      if (todos[editIndex].completed) {
+        Alert.alert('Không thể sửa công việc đã hoàn thành');
+        return;
+      }
+      const updatedTodos = todos.map((todo, index) =>
+        index === editIndex ? { ...todo, title, content } : todo
+      );
+      setTodos(updatedTodos);
+      setEditIndex(null);
+    } else {
+      if (title == '') {
+        Alert.alert('Vui lòng nhập tiêu đề công việc');
+      } else if (content == '') {
+        Alert.alert('Vui lòng nhập nội dung công việc');
+      } else {
+        setTodos([...todos, { title, content, completed: false }]);
+        setTitle('');
+        setContent('');
+      }
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    }
   };
 
+  // Sửa công việc
+  const editTodo = (index) => {
+    if (todos[index].completed) {
+      Alert.alert('Không thể chỉnh sửa công việc đã hoàn thành');
+      return;
+    } else {
+      setTitle(todos[index].title);
+      setContent(todos[index].content);
+      setEditIndex(index);
+    }
+
+  };
+
+  // Xóa công việc
+  const deleteTodo = (index) => {
+    setTodos(todos.filter((_, i) => i !== index));
+  };
+
+  // Đổi trạng thái công việc
+  const toggleComplete = (index) => {
+    const updatedTodos = todos.map((todo, i) =>
+      i === index ? { ...todo, completed: !todo.completed } : todo
+    );
+    setTodos(updatedTodos);
+  };
+
+  // Tính công việc đã và chưa làm 
+  const completedCount = todos.filter(todo => todo.completed).length;
+  const incompleteCount = todos.length - completedCount;
+
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <View style={styles.container}>
+      <Text style={styles.header}>Todo List</Text>
+      <Text style={{ fontSize: 18, color: 'black' }}>Đã hoàn thành: {completedCount}</Text>
+      <Text style={styles.counter}>Chưa hoàn thành: {incompleteCount}</Text>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Tiêu đề"
+          value={title}
+          onChangeText={setTitle}
+          editable={editIndex === null || (editIndex !== null && !todos[editIndex].completed)}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Nội dung"
+          value={content}
+          onChangeText={setContent}
+          editable={editIndex === null || (editIndex !== null && !todos[editIndex].completed)}
+        />
+        <TouchableOpacity style={styles.button} onPress={addOrUpdateTodo}>
+          <Text style={styles.buttonText}>{editIndex !== null ? 'Sửa' : 'Thêm'}</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={todos}
+        renderItem={({ item, index }) => (
+          <View style={styles.todoItem}>
+            <Text style={[styles.todoText, item.completed && styles.completed]}>{item.title}</Text>
+            <Text>{item.content}</Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={() => toggleComplete(index)}>
+                <Text style={styles.toggleButton}>{item.completed ? 'Chưa xong' : 'Đã xong'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => editTodo(index)}>
+                <Text style={styles.editButton}>Sửa</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => deleteTodo(index)}>
+                <Text style={styles.deleteButton}>Xóa</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        keyExtractor={(_, index) => index.toString()}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
-  sectionTitle: {
+  header: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
-  sectionDescription: {
-    marginTop: 8,
+  counter: {
     fontSize: 18,
-    fontWeight: '400',
+    marginBottom: 20,
+    color: 'black'
   },
-  highlight: {
-    fontWeight: '700',
+  inputContainer: {
+    marginBottom: 20,
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  button: {
+    backgroundColor: 'blue',
+    padding: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  todoItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'gray',
+  },
+  todoText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  completed: {
+    textDecorationLine: 'line-through',
+    color: 'gray',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  toggleButton: {
+    color: 'blue',
+  },
+  editButton: {
+    color: 'orange',
+  },
+  deleteButton: {
+    color: 'red',
   },
 });
 
